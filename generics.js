@@ -1,6 +1,11 @@
 const crypto = require("crypto")
 const COIN = 100000000
 
+//#DEFINE - Method to generate proof when nonce works
+    //(where i = nonce) => sha256((BigInt(i) + BigInt(hexify(block.header))).toString(16))
+        //returns hexidecimal string representation of proof 
+//#END-DEFINE
+
 const sha256 = (string) => {
     let hash = crypto.createHash('sha256');
     return hash.update(string).digest('hex')

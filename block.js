@@ -10,7 +10,18 @@ const {
     hexify
 } = require("./generics.js")
 
-//one hundred million subunits of a coin
+const {
+    BlockChain
+} = require('./blockchain.js');
+
+const{
+    Transaction
+} = require("./transaction.js")
+
+const{
+    Wallet
+} = require('./wallet.js')
+
 
 
 
@@ -25,7 +36,7 @@ class Block{
 
             //how fast my computer hashes in 2 minutes about
             //block time is 2 minutes;
-            this.difficulty = 10
+            this.difficulty = 10000
         }
         else{
             this.previousProof = previousBlock.proof;
@@ -68,7 +79,7 @@ class Block{
     //complete block and mine for it:
     complete(){
         this.merkleRoot = (new MerkleTree.MerkleTree((this.transactions.map(x=>sha256(x))), sha256)).getRoot().toString('hex')
-        this.timeStamp = (new Date()).getMilliseconds()
+        this.timeStamp = Date.now()
         this.header = sha256(JSON.stringify(this))
     }
 
@@ -77,21 +88,23 @@ class Block{
     }
 }
 
-
-
 const mineBlock = (block) =>{
     for (let i = 0; i < Infinity; i++){
         if(checkIfSumLess(i.toString(16), block.header, generateTarget(block.difficulty)))
         {
-            return [i,(BigInt(i) + BigInt(hexify(block.header))).toString(16)]
+            return [i,sha256((BigInt(i) + BigInt(hexify(block.header))).toString(16))]
         }
     }
 
     return block
 }
 
-let test = new Block()
-test.complete()
-test.manualMine()
 
-console.log(JSON.stringify(test))
+let wallet = new Wallet("test")
+console.log("create wallet: " + wallet.createNewWallet())
+wallet.grab()
+let transac = new Transaction(wallet.public, wallet.nonce)
+transac.addOutput("eruehguehguehge", 10)
+console.log(JSON.stringify(transac))
+console.log(wallet.signTransaction(transac))
+
