@@ -27,5 +27,8 @@ const generateTarget = (difficulty)=>{
     return ((BigInt(2) ** BigInt(256)) / BigInt(hexify(difficulty))).toString(16)
 }
 
+//regenerates key object from given hex public key value and verifies signature
+
+
 module.exports = {COIN, sha256, checkIfSumLess,generateTarget, hexify}
 

@@ -8,7 +8,7 @@ const {
     checkIfSumLess,
     generateTarget,
     hexify
-} = require("./generics.js")
+} = require("./crypto.js")
 
 const {
     BlockChain
@@ -100,11 +100,4 @@ const mineBlock = (block) =>{
 }
 
 
-let wallet = new Wallet("test")
-console.log("create wallet: " + wallet.createNewWallet())
-wallet.grab()
-let transac = new Transaction(wallet.public, wallet.nonce)
-transac.addOutput("eruehguehguehge", 10)
-console.log(JSON.stringify(transac))
-console.log(wallet.signTransaction(transac))
 

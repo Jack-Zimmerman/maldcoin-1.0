@@ -12,7 +12,7 @@ const {
     checkIfSumLess,
     generateTarget,
     hexify
-} = require("./generics.js")
+} = require("./crypto.js")
 
 const {
     BlockChain
@@ -22,10 +22,11 @@ const { Signature } = require('starkbank-ecdsa');
 class Wallet{
     constructor(name){
         this.name = name;
+        this.path = `wallets/${this.name}.dat`
     }
     
     checkIfExists(){
-        if (fileStream.existsSync(`wallets/${this.name}.dat`)){
+        if (fileStream.existsSync(this.path)){
             return true
         }
         else{
@@ -36,7 +37,7 @@ class Wallet{
     //getOldWallet if exists
     grab(){
         if(this.checkIfExists()){
-            const wallet = JSON.parse(fileStream.readFileSync(`wallets/${this.name}.dat`))
+            const wallet = JSON.parse(fileStream.readFileSync(this.path))
             this.created = wallet.created
             this.private = wallet.private
             this.public = wallet.public
@@ -54,20 +55,32 @@ class Wallet{
         this.public = tempPair.getPublic().encodeCompressed("hex")
 
         //writing to file
-        if(fileStream.existsSync(`wallets/${this.name}.dat`)){
+        if(fileStream.existsSync(this.path)){
             return false;
         }
         else{
-            fileStream.openSync(`wallets/${this.name}.dat`, 'w')
-            fileStream.writeFileSync(`wallets/${this.name}.dat`, JSON.stringify(this))
+            fileStream.openSync(this.path, 'w')
+            fileStream.writeFileSync(this.path, JSON.stringify(this))
         }
+
+        return true
     }
 
+    incrementNonce(){
+        this.nonce++;
+        
+        fileStream.openSync(this.path)
+        let wallet = JSON.parse(fileStream.readSync(this.path))
+        wallet.nonce++;
+        fileStream.writeFileSync(this.path, JSON.stringify(wallet))
+    }
+
+    //mutable
     signTransaction(transaction){
        let hash = sha256(JSON.stringify(transaction.outputs) + transaction.timestamp + transaction.nonce + transaction.sender)
-       this.nonce++;
-       transaction.signature = (new elliptic.ec("secp256k1")).sign(hash, this.private, "hex")
-       return transaction.signature
+       this.incrementNonce()
+       transaction.signature = (new elliptic.ec("secp256k1")).sign(hash, this.private, "hex").toDER("hex")
+       return transaction
     }
 
     

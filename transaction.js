@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const express = require("express")
 const MerkleTree = require("merkletreejs")
+const elliptic = require("elliptic")
 
 const {
     COIN, 
@@ -8,7 +9,7 @@ const {
     checkIfSumLess,
     generateTarget,
     hexify
-} = require("./generics.js")
+} = require("./crypto.js")
 
 const {
     BlockChain
@@ -31,6 +32,15 @@ class Transaction{
     //give in coin value--NO DECIMAL    
     addOutput(recieverAddress, amountToGive){
         this.outputs.push({reciever: recieverAddress, amount: amountToGive})
+    }
+
+
+    //verify external transaction given the object or hashmap
+    static verifyTransaction(transaction){
+        let hashMessage = sha256(JSON.stringify(transaction.outputs) + transaction.timestamp + transaction.nonce + transaction.sender)
+        let key = (new elliptic.ec('secp256k1')).keyFromPublic(transaction.sender, 'hex')
+        return key.verify(hashMessage, transaction.signature)
+
     }
 }
 

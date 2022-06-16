@@ -15,8 +15,11 @@ const {
     checkIfSumLess,
     generateTarget,
     hexify
-} = require("./generics.js");
+} = require("./crypto.js");
+
 const { Resolver } = require('dns');
+
+
 
 class BlockChain{
     constructor(){
@@ -58,7 +61,7 @@ class BlockChain{
 
                 res.insertOne({
                     chainHeight : -1,
-                    usedNonces : [],
+                    knownAddressData : [],
                     createdDate: Date.now()
                 })
             })
@@ -70,7 +73,7 @@ class BlockChain{
 
     }
 
-    async insertBlock(block){
+    async addBlock(block){
         //REMEMBER TO ADD INCREMENT TO USER NONCE FOR EACH TRANSACTION
         return new Promise(resolve =>{
             this.blocks.insertOne(block).then(async result=>{
@@ -112,11 +115,35 @@ class BlockChain{
             await this.data.deleteMany({})
             await this.data.insertOne({
                 chainHeight : -1,
-                usedNonces : [],
+                knownAddressData : [],
                 createdDate: Date.now()
             })
 
             resolve(true)
+        })
+    }
+
+    async changeNonce(transaction){
+        return new Promise(async resolve=>{
+            //check to see if address is listed
+            let knownAddress = (await this.data.findOne({})).knownAddressData.find(x => x.address == transaction.sender)
+            if (addresses == undefined){
+                let address = {
+                    address : transaction.sender,
+                    //adds value of transaction as starting balance
+                    balance : transaction.outputs.reduce((sum, output) => sum + output.amount, 0),
+                    nonce : transaction.nonce
+                }
+                await this.data.updateOne({}, {$push : {knownAddressData : address}})
+            }
+            else{
+                let addressList = (await this.data.findOne({})).knownAddressData
+                let index  = addressList.indexOf(knownAddress)
+                knownAddress.nonce = transaction.nonce
+                knownAddress.balance -= transaction.outputs.reduce((sum, output) => sum + output.amount, 0)
+                addressList[index] = knownAddress
+                await this.data.updateOne({}, {$set : {knownAddressData : addressList}})
+            }
         })
     }
 }
