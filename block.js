@@ -36,11 +36,11 @@ class Block{
 
             //how fast my computer hashes in 2 minutes about
             //block time is 2 minutes;
-            this.difficulty = 10000
+            this.difficulty = 10
         }
         else{
-            this.previousProof = previousBlock.proof;
-            this.height = previousBlock.height+1;
+            this.previousProof = this.previousBlock.proof;
+            this.height = this.previousBlock.height+1;
             this.difficulty = this.calculateDifficulty()
         }
         
@@ -99,5 +99,6 @@ const mineBlock = (block) =>{
     return block
 }
 
+module.exports = {Block}
 
 

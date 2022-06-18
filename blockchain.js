@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const express = require("express")
 const MerkleTree = require("merkletreejs")
 const mongo = require('mongodb');
-const fs = require('fs');
+const fileStream = require('fs');
 
 //#DEFINE - port for database
     //Port for mongoDB is 27017
@@ -70,17 +70,18 @@ class BlockChain{
 
         this.data = this.db.collection("data")
         this.blocks = this.db.collection("blocks")
-
     }
 
     async addBlock(block){
         //REMEMBER TO ADD INCREMENT TO USER NONCE FOR EACH TRANSACTION
         return new Promise(resolve =>{
+            delete block.previousBlock
             this.blocks.insertOne(block).then(async result=>{
-                let currentHeight = await this.data.findOne({})
-                currentHeight = currentHeight.chainHeight
-                await this.data.updateOne({}, {$set: {blockHeight : currentHeight+1}})
-                resolve(true)
+                //delete previous block from block instance
+                let currentHeight = (await this.data.findOne({})).chainHeight
+                this.data.updateOne({}, {$set: {chainHeight : currentHeight+1}}).then(res=>{
+                    resolve(true)
+                })
             })
         })
     }
@@ -89,14 +90,13 @@ class BlockChain{
     async readBlock(blockHeight){
         return new Promise(resolve =>{
             this.data.findOne({}).then(result=>{
-                console.log(result)
                 if (result.chainHeight <= blockHeight  && result.chainHeight != -1){
                     this.blocks.findOne({height : blockHeight}).then(async result =>{
                         resolve(result)
                     })
                 }
                 else{
-                    resolve(-1)
+                    resolve(undefined)
                 }
             })
         })  
@@ -145,6 +145,32 @@ class BlockChain{
                 await this.data.updateOne({}, {$set : {knownAddressData : addressList}})
             }
         })
+    }
+
+
+    async chainToJson(destinationFile){
+        await this.blocks.find({}).toArray().then(result => {
+           let file = fileStream.openSync(destinationFile, 'w');
+           fileStream.writeSync(file, JSON.stringify(result, null, 4))
+        })
+    }
+
+    async dataToJson(destinationFile){
+        await this.data.find({}).toArray().then(result => {
+            let file = fileStream.openSync(destinationFile, 'w');
+            fileStream.writeSync(file, JSON.stringify(result, null, 4))
+         })
+    }
+
+    //creates folder if does not exist and places ordered mongodb data
+    async writeMongoContent(destinationFolder){
+        if (!fileStream.existsSync(destinationFolder)){
+            fileStream.mkdirSync(destinationFolder)
+        }
+        await this.chainToJson(`${destinationFolder}/blockchain`)
+        await this.dataToJson(`${destinationFolder}/data`)
+
+        console.log("data has been written to -> " + destinationFolder)
     }
 }
 

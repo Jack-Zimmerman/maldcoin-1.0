@@ -68,7 +68,6 @@ class Wallet{
 
     incrementNonce(){
         this.nonce++;
-        
         fileStream.openSync(this.path)
         let wallet = JSON.parse(fileStream.readSync(this.path))
         wallet.nonce++;
@@ -82,8 +81,6 @@ class Wallet{
        transaction.signature = (new elliptic.ec("secp256k1")).sign(hash, this.private, "hex").toDER("hex")
        return transaction
     }
-
-    
 }
 
 module.exports = {Wallet}
