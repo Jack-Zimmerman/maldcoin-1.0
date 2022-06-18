@@ -17,7 +17,24 @@ const {
     hexify
 } = require("./crypto.js");
 
-const { Resolver } = require('dns');
+const{
+    Transaction
+} = require("./transaction.js")
+
+const{
+    Wallet
+} = require('./wallet.js')
+
+const{
+    Block
+} = require('./block.js');
+const e = require('express');
+
+
+//#DEFINE - names
+    //BlockChain.blocks is for storing blocks within a collection
+    //BlockChain.data is for storing information about the blockchain and the balance of users
+//#END-DEFINE
 
 
 
@@ -57,11 +74,10 @@ class BlockChain{
                     throw err;
                 }
 
-                //assign base values:
-
+                //assign base values for data segment:
                 res.insertOne({
                     chainHeight : -1,
-                    knownAddressData : [],
+                    use : "main",
                     createdDate: Date.now()
                 })
             })
@@ -78,8 +94,8 @@ class BlockChain{
             delete block.previousBlock
             this.blocks.insertOne(block).then(async result=>{
                 //delete previous block from block instance
-                let currentHeight = (await this.data.findOne({})).chainHeight
-                this.data.updateOne({}, {$set: {chainHeight : currentHeight+1}}).then(res=>{
+                let currentHeight = (await this.data.findOne({use : "main"})).chainHeight
+                this.data.updateOne({use : "main"}, {$set: {chainHeight : currentHeight+1}}).then(res=>{
                     resolve(true)
                 })
             })
@@ -87,9 +103,9 @@ class BlockChain{
     }
 
 
-    async readBlock(blockHeight){
+    async getBlock(blockHeight){
         return new Promise(resolve =>{
-            this.data.findOne({}).then(result=>{
+            this.data.findOne({use : "main"}).then(result=>{
                 if (result.chainHeight <= blockHeight  && result.chainHeight != -1){
                     this.blocks.findOne({height : blockHeight}).then(async result =>{
                         resolve(result)
@@ -101,6 +117,90 @@ class BlockChain{
             })
         })  
     }
+
+    async verifyAndInterpretTransaction(transaction){
+        return new Promise(async resolve =>{
+            if (Object.keys(transaction) != Object.keys(new Transaction("test", 1))){
+                resolve(false)
+            }
+            else{
+                //START INTERPRET SENDER
+                const addressData = await this.data.findOne({address : transaction.sender})
+
+                //if address is unknown then reject transaction
+                //if node is up to date all accounts would have been registered
+                if (addressData == undefined){
+                    resolve(false)
+                }
+                else if (addressData.nonce >= transaction.nonce){ //check to see that sender used higher nonce than before
+                    resolve(false)
+                }
+                else if (addressData.balance < this.getTransactionAmount(transaction) && this.getTransactionAmount(transaction) != 0){ //generate sum of all outputs and check for total amount
+                    resolve(false)
+                }
+                else if (transaction.outputs.map(x => x.sender).indexOf(transaction.sender) != -1){ //check to see if any transactions were made to self
+                    resolve(false)
+                }
+                else if (transactions.outputs.map(x => Math.abs(x)) != transaction.outputs){//check to see if negative transactions were attempted
+                    resolve(false)
+                }
+                else{
+                    //change nonce and remove coins from sending account:
+                    await this.data.updateOne({address : transaction.sender}, 
+                        {$set : {
+                            balance : addressData.balnce - this.getTransactionAmount(transaction),
+                            nonce : transaction.nonce
+                        }}
+                    )
+
+                    //if transaction is valid 
+                    for (const output of transaction.outputs){
+                        let reciever = await this.data.findOne({address : output.reciever})
+                        if (reciever == undefined){
+                            //add address to balance list if not included
+                            this.data.insertOne({
+                                address : output.reciever,
+                                balance : output.amount,
+                                nonce : 0
+                            })
+                        }
+                        else{
+                            //add incoming coins to address
+                            await this.data.updateOne({address : output.reciever}, 
+                                {$set : {balance : reciever.balance + output.amount}}
+                            )
+                        }
+                    }
+
+                    //add fee to end of transaction
+                    transaction.fee = this.calculateTransactionFee(transaction)
+
+                    //return finalized transaction
+                    resolve(transaction)
+                }
+            }
+        })   
+    }
+
+    //get sum of all outputs in a transaction
+    static getTransactionAmount(transaction){
+        return transaction.outputs.reduce((sum, x) => sum + x.amount, 0) + this.calculateTransactionFee(transaction)
+    }
+
+    static calculateTransactionFee(transaction){
+        //baseFee is 100000ths of a coin
+        const baseFee = 1000
+
+        //square amount of outputs in order to discourage overuse of multiple outputs
+        var outputFee = Math.pow(transaction.outputs.length, 2) * 100
+
+        //examples:
+        //1 output -> 100
+        //5 outputs -> 2500
+        //10 outputs -> 10000
+        return baseFee + outputFee
+    }
+
 
     async wipeBlocks(){
         return new Promise(resolve =>{
@@ -115,7 +215,7 @@ class BlockChain{
             await this.data.deleteMany({})
             await this.data.insertOne({
                 chainHeight : -1,
-                knownAddressData : [],
+                use : "data",
                 createdDate: Date.now()
             })
 
@@ -123,30 +223,7 @@ class BlockChain{
         })
     }
 
-    async changeNonce(transaction){
-        return new Promise(async resolve=>{
-            //check to see if address is listed
-            let knownAddress = (await this.data.findOne({})).knownAddressData.find(x => x.address == transaction.sender)
-            if (addresses == undefined){
-                let address = {
-                    address : transaction.sender,
-                    //adds value of transaction as starting balance
-                    balance : transaction.outputs.reduce((sum, output) => sum + output.amount, 0),
-                    nonce : transaction.nonce
-                }
-                await this.data.updateOne({}, {$push : {knownAddressData : address}})
-            }
-            else{
-                let addressList = (await this.data.findOne({})).knownAddressData
-                let index  = addressList.indexOf(knownAddress)
-                knownAddress.nonce = transaction.nonce
-                knownAddress.balance -= transaction.outputs.reduce((sum, output) => sum + output.amount, 0)
-                addressList[index] = knownAddress
-                await this.data.updateOne({}, {$set : {knownAddressData : addressList}})
-            }
-        })
-    }
-
+    
 
     async chainToJson(destinationFile){
         await this.blocks.find({}).toArray().then(result => {

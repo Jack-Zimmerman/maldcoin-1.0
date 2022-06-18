@@ -27,24 +27,5 @@ const{
     Block
 } = require('./block.js')
 
-async function test(){
-    const chain = new BlockChain()
-    await chain.wipeBlocks()
-    await chain.wipeData()
-    for (let i = 0; i < 10000; i++){
-        let tempBlock = new Block(await chain.readBlock(i-1));
-        tempBlock.complete()
-        tempBlock.manualMine()
-        await chain.addBlock(tempBlock)
-    }
-
-    let start = Date.now()
-    for (let a = 0; a < 10000; a++){
-        await chain.readBlock(a)
-    }
-    console.log((Date.now()-start)/1000000)
 
 
-}
-
-test()
