@@ -78,9 +78,12 @@ class Block{
 
     //complete block and mine for it:
     complete(){
-        this.merkleRoot = (new MerkleTree.MerkleTree((this.transactions.map(x=>sha256(x))), sha256)).getRoot().toString('hex')
-        this.timeStamp = Date.now()
-        this.header = sha256(JSON.stringify(this))
+        return new Promise(resolve =>{
+            this.merkleRoot = (new MerkleTree.MerkleTree((this.transactions.map(x=>sha256(x))), sha256)).getRoot().toString('hex')
+            this.timeStamp = Date.now()
+            this.header = sha256(JSON.stringify(this))
+            resolve()
+        })
     }
 
     manualMine(){
@@ -99,6 +102,5 @@ const mineBlock = (block) =>{
     return block
 }
 
-module.exports = {Block}
-
+module.exports = {Block, mineBlock}
 

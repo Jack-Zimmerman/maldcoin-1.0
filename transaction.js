@@ -11,9 +11,7 @@ const {
     hexify
 } = require("./crypto.js")
 
-const {
-    BlockChain
-} = require('./blockchain.js');
+
 
 
 class Transaction{

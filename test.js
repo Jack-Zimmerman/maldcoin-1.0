@@ -24,8 +24,27 @@ const{
 } = require('./wallet.js')
 
 const{
-    Block
+    Block,
+    mineBlock
 } = require('./block.js')
 
+
+
+async function main(){
+    let chain = new BlockChain()
+    await chain.wipeBlocks()
+    await chain.wipeData()
+
+    for (let i = 0; i < 100; i++){
+        let a = new Block(await chain.getBlock(i-1))
+        await a.complete()
+        a.manualMine()
+        await chain.addBlock(a)
+    } 
+
+    await chain.writeMongoContent("database")
+}
+
+main()
 
 

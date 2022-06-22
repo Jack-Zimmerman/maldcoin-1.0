@@ -25,10 +25,7 @@ const{
     Wallet
 } = require('./wallet.js')
 
-const{
-    Block
-} = require('./block.js');
-const e = require('express');
+
 
 
 //#DEFINE - names
@@ -77,7 +74,7 @@ class BlockChain{
                 //assign base values for data segment:
                 res.insertOne({
                     chainHeight : -1,
-                    use : "main",
+                    use : "data",
                     createdDate: Date.now()
                 })
             })
@@ -93,11 +90,9 @@ class BlockChain{
         return new Promise(resolve =>{
             delete block.previousBlock
             this.blocks.insertOne(block).then(async result=>{
-                //delete previous block from block instance
-                let currentHeight = (await this.data.findOne({use : "main"})).chainHeight
-                this.data.updateOne({use : "main"}, {$set: {chainHeight : currentHeight+1}}).then(res=>{
-                    resolve(true)
-                })
+                let currentHeight = await this.getCurrentHeight()
+                await this.data.updateOne({use : "data"}, {$set: {chainHeight : currentHeight+1}})
+                resolve(true)
             })
         })
     }
@@ -105,7 +100,7 @@ class BlockChain{
 
     async getBlock(blockHeight){
         return new Promise(resolve =>{
-            this.data.findOne({use : "main"}).then(result=>{
+            this.data.findOne({use : "data"}).then(result=>{
                 if (result.chainHeight <= blockHeight  && result.chainHeight != -1){
                     this.blocks.findOne({height : blockHeight}).then(async result =>{
                         resolve(result)
@@ -202,6 +197,24 @@ class BlockChain{
     }
 
 
+    async grabMainData(){
+        return new Promise(async resolve=>{
+            resolve(
+                await this.data.findOne({use : "data"})
+            )
+        })
+    }
+
+
+    async getCurrentHeight(){
+        return new Promise(async resolve=>{
+            resolve(
+                (await this.grabMainData()).chainHeight
+            )
+        })
+    }
+
+
     async wipeBlocks(){
         return new Promise(resolve =>{
             this.blocks.deleteMany({}).then(res =>{
@@ -244,6 +257,7 @@ class BlockChain{
         if (!fileStream.existsSync(destinationFolder)){
             fileStream.mkdirSync(destinationFolder)
         }
+        console.log("Writing to files...")
         await this.chainToJson(`${destinationFolder}/blockchain`)
         await this.dataToJson(`${destinationFolder}/data`)
 

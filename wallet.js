@@ -14,9 +14,7 @@ const {
     hexify
 } = require("./crypto.js")
 
-const {
-    BlockChain
-} = require('./blockchain.js');
+
 const { Signature } = require('starkbank-ecdsa');
 
 class Wallet{

@@ -18,8 +18,8 @@ const hexify = (hexString) =>{
 
 //takes hex1, hex2, target
 //converts hex into BigInts and then calculates
-const checkIfSumLess =(h1, h2, target)=>{
-    return BigInt(hexify(sha256((BigInt(hexify(h1)) + BigInt(hexify(h2))).toLocaleString()))) <= BigInt(hexify(target))
+const checkIfSumLess = (h1, h2, target)=>{
+    return BigInt(hexify(sha256((BigInt(hexify(h1)) + BigInt(hexify(h2))).toLocaleString()))) < BigInt(hexify(target))
 }
 
 //returns BigInt converted to hex string
