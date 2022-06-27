@@ -1,6 +1,21 @@
 const crypto = require("crypto")
 const COIN = 100000000
 
+const Hashes = {
+    KILOHASH : 1000,
+    MEGAHASH : 1000000,
+    GIGAHASH : 1000000000
+}
+
+
+//takes two hex inputs and returns the sha256 of the addition
+const addAndHash = (hex1, hex2) => {
+   return sha256(
+    BigInt(hexify(hex1)) + BigInt(hexify(hex2)).toString('16')
+   ) 
+}
+
+
 //#DEFINE - Method to generate proof when nonce works
     //(where i = nonce) => sha256((BigInt(i) + BigInt(hexify(block.header))).toString(16))
         //returns hexidecimal string representation of proof 
@@ -16,10 +31,12 @@ const hexify = (hexString) =>{
     return "0x" + hexString
 }
 
-//takes hex1, hex2, target
+//takes hex1, hex2, target(hex)
 //converts hex into BigInts and then calculates
 const checkIfSumLess = (h1, h2, target)=>{
-    return BigInt(hexify(sha256((BigInt(hexify(h1)) + BigInt(hexify(h2))).toLocaleString()))) < BigInt(hexify(target))
+    const hash = addAndHash(h1, h2)
+    
+    return BigInt(hexify(hash)) <= BigInt(hexify(target))
 }
 
 //returns BigInt converted to hex string
@@ -30,5 +47,13 @@ const generateTarget = (difficulty)=>{
 //regenerates key object from given hex public key value and verifies signature
 
 
-module.exports = {COIN, sha256, checkIfSumLess,generateTarget, hexify}
+module.exports = {
+    COIN, 
+    sha256, 
+    checkIfSumLess,
+    generateTarget,
+    hexify, 
+    Hashes, 
+    addAndHash
+}
 

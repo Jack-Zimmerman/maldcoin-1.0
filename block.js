@@ -7,7 +7,9 @@ const {
     sha256,
     checkIfSumLess,
     generateTarget,
-    hexify
+    hexify,
+    Hashes,
+    addAndHash
 } = require("./crypto.js")
 
 const {
@@ -36,7 +38,7 @@ class Block{
 
             //how fast my computer hashes in 2 minutes about
             //block time is 2 minutes;
-            this.difficulty = 10
+            this.difficulty = Hashes.KILOHASH * 100
         }
         else{
             this.previousProof = this.previousBlock.proof;
@@ -92,10 +94,11 @@ class Block{
 }
 
 const mineBlock = (block) =>{
+    var target = generateTarget(block.difficulty)
     for (let i = 0; i < Infinity; i++){
-        if(checkIfSumLess(i.toString(16), block.header, generateTarget(block.difficulty)))
+        if(checkIfSumLess(i.toString(16), block.header, target))
         {
-            return [i,sha256((BigInt(i) + BigInt(hexify(block.header))).toString(16))]
+            return [i,addAndHash(i.toString(16), block.header)]
         }
     }
 

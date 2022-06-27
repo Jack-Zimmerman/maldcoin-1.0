@@ -8,7 +8,7 @@ const {
     sha256,
     checkIfSumLess,
     generateTarget,
-    hexify
+    hexify,
 } = require("./crypto.js")
 
 const {
@@ -36,15 +36,19 @@ async function main(){
     await chain.wipeData()
 
     for (let i = 0; i < 100; i++){
+        
         let a = new Block(await chain.getBlock(i-1))
         await a.complete()
         a.manualMine()
         await chain.addBlock(a)
+        console.log(a)
     } 
 
     await chain.writeMongoContent("database")
 }
 
 main()
+
+
 
 
