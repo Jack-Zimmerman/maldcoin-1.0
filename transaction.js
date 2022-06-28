@@ -38,7 +38,14 @@ class Transaction{
         let hashMessage = sha256(JSON.stringify(transaction.outputs) + transaction.timestamp + transaction.nonce + transaction.sender)
         let key = (new elliptic.ec('secp256k1')).keyFromPublic(transaction.sender, 'hex')
         return key.verify(hashMessage, transaction.signature)
+    }
+    
 
+    static createCoinBaseTransaction(address, amount){
+        let coinbase = "0".repeat(64)
+        let transac = new Transaction(coinbase, 0)
+        transac.addOutput(address, amount)
+        return transac
     }
 }
 

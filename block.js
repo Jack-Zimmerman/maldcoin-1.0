@@ -56,7 +56,7 @@ class Block{
 
     //add transaction object to transactions list
     addTransaction(transaction){
-        this.transactions.push(transactions)
+        this.transactions.push(transaction)
     }
 
     calculateDifficulty(){
@@ -78,14 +78,18 @@ class Block{
         return 100*COIN*Math.pow(1/2, Math.floor(this.height/525600))
     }
 
+    static calculateReward(height){
+        return 100*COIN*Math.pow(1/2, Math.floor(height/525600))
+    }
+
     //complete block and mine for it:
-    complete(){
-        return new Promise(resolve =>{
-            this.merkleRoot = (new MerkleTree.MerkleTree((this.transactions.map(x=>sha256(x))), sha256)).getRoot().toString('hex')
-            this.timeStamp = Date.now()
-            this.header = sha256(JSON.stringify(this))
-            resolve()
-        })
+    //miner must pass the wallet object in order to sign the coinbase transaction
+    complete(wallet){
+        this.miner = wallet.public
+        this.merkleRoot = (new MerkleTree.MerkleTree((this.transactions.map(x=>sha256(x))), sha256)).getRoot().toString('hex')
+        this.timeStamp = Date.now()
+        this.header = sha256(JSON.stringify(this))
+        this.addTransaction(wallet.signTransaction(Transaction.createCoinBaseTransaction(this.miner, this.calculateReward())))
     }
 
     manualMine(){

@@ -14,7 +14,8 @@ const {
     sha256,
     checkIfSumLess,
     generateTarget,
-    hexify
+    hexify,
+    generateTarget
 } = require("./crypto.js");
 
 const{
@@ -24,6 +25,10 @@ const{
 const{
     Wallet
 } = require('./wallet.js')
+
+const{
+    Block
+} = require("./block.js")
 
 
 
@@ -175,6 +180,37 @@ class BlockChain{
                 }
             }
         })   
+    }
+
+    //verifies block:
+        //coinbase transaction
+        //transactions are correct
+    
+    async verifyBlock(block){
+        return new Promise(async resolve =>{
+            const coinbase = "0".repeat(64);
+            const correctReward = Block.calculateReward(block.height);
+            const compiledProof = sha256(hexify(BigInt(block.nonce) + BigInt(hexify(block.header))));
+
+            //check to see if POW is correct for block:
+            if (compiledProof != block.proof){//nonce + header is truthfull
+                resolve(false)
+            }
+            else if (BigInt(hexify(compiledProof)) > BigInt(hexify(generateTarget(block.difficulty)))){//check to see if proof demonstrates sufficient difficulty
+                resolve(false)
+            }
+
+            //work in progress 
+
+            for (var transaction of block.transactions){
+                if (transac.sender == coinbase){
+
+                }
+                else{
+                    this.verifyAndInterpretTransaction(transaction)
+                }
+            }
+        })
     }
 
     //get sum of all outputs in a transaction

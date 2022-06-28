@@ -35,10 +35,12 @@ async function main(){
     await chain.wipeBlocks()
     await chain.wipeData()
 
-    for (let i = 0; i < 100; i++){
-        
+    let minerWallet = new Wallet("test")
+    minerWallet.grab()
+
+    for (let i = 0; i < 10; i++){
         let a = new Block(await chain.getBlock(i-1))
-        await a.complete()
+        a.complete(minerWallet)
         a.manualMine()
         await chain.addBlock(a)
         console.log(a)

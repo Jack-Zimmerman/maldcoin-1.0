@@ -15,8 +15,6 @@ const {
 } = require("./crypto.js")
 
 
-const { Signature } = require('starkbank-ecdsa');
-
 class Wallet{
     constructor(name){
         this.name = name;
@@ -64,10 +62,10 @@ class Wallet{
         return true
     }
 
-    incrementNonce(){
+    async incrementNonce(){
         this.nonce++;
-        fileStream.openSync(this.path)
-        let wallet = JSON.parse(fileStream.readSync(this.path))
+        let wallet = JSON.parse(fileStream.readFileSync(this.path))
+
         wallet.nonce++;
         fileStream.writeFileSync(this.path, JSON.stringify(wallet))
     }
