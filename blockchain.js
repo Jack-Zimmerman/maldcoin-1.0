@@ -15,7 +15,6 @@ const {
     checkIfSumLess,
     generateTarget,
     hexify,
-    generateTarget
 } = require("./crypto.js");
 
 const{
@@ -106,7 +105,7 @@ class BlockChain{
     async getBlock(blockHeight){
         return new Promise(resolve =>{
             this.data.findOne({use : "data"}).then(result=>{
-                if (result.chainHeight <= blockHeight  && result.chainHeight != -1){
+                if (result.chainHeight >= blockHeight  && result.chainHeight != -1){
                     this.blocks.findOne({height : blockHeight}).then(async result =>{
                         resolve(result)
                     })
@@ -118,6 +117,46 @@ class BlockChain{
         })  
     }
 
+    async getHighestBlock(){
+        return new Promise(async resolve =>{
+            let height = await this.getCurrentHeight()
+            let result = await this.getBlock(height);
+            resolve(result)
+        })
+    }
+
+    //does not change blockchain data or transaction object
+    async verifyTransaction(transaction){
+        if (Object.keys(transaction) != Object.keys(new Transaction("test", 1))){
+            resolve(false)
+        }
+        else{
+            //START INTERPRET SENDER
+            const addressData = await this.data.findOne({address : transaction.sender})
+
+            //if address is unknown then reject transaction
+            //if node is up to date all accounts would have been registered
+            if (addressData == undefined){
+                resolve(false)
+            }
+            else if (addressData.nonce >= transaction.nonce){ //check to see that sender used higher nonce than before
+                resolve(false)
+            }
+            else if (addressData.balance < this.getTransactionAmount(transaction) && this.getTransactionAmount(transaction) != 0){ //generate sum of all outputs and check for total amount
+                resolve(false)
+            }
+            else if (transaction.outputs.map(x => x.sender).indexOf(transaction.sender) != -1){ //check to see if any transactions were made to self
+                resolve(false)
+            }
+            else if (transactions.outputs.map(x => Math.abs(x)) != transaction.outputs){//check to see if negative transactions were attempted
+                resolve(false)
+            }
+        }
+
+        resolve(true)
+    }
+
+    //changes blockchain balance data and adds transaction fee
     async verifyAndInterpretTransaction(transaction){
         return new Promise(async resolve =>{
             if (Object.keys(transaction) != Object.keys(new Transaction("test", 1))){
@@ -191,6 +230,18 @@ class BlockChain{
             const coinbase = "0".repeat(64);
             const correctReward = Block.calculateReward(block.height);
             const compiledProof = sha256(hexify(BigInt(block.nonce) + BigInt(hexify(block.header))));
+            const coinBaseTransaction = block.transactions.filter(x => x.sender === coinbase)
+            const previousBlock = await this.getHighestBlock()
+
+            //check if header is valid:
+            if (sha256(JSON.stringify(block)) != block.header){
+                resolve(false)
+            }
+
+            //check to see if previousBlock pointer is correct:
+            if (block.previousBlock != previousBlock){
+                resolve(false)
+            }
 
             //check to see if POW is correct for block:
             if (compiledProof != block.proof){//nonce + header is truthfull
@@ -200,17 +251,50 @@ class BlockChain{
                 resolve(false)
             }
 
-            //work in progress 
+            //check to see if reward is correct:
+            if (coinBaseTransaction.length != 1){//check for multiple or no coinbase transactions
+                resolve(false)
+            }
+            else if (coinBaseTransaction.amount != correctReward){
+                resolve(false)
+            }
 
+            //verifies all transactions(non-mutable)
             for (var transaction of block.transactions){
-                if (transac.sender == coinbase){
-
+                if (transaction.sender == coinbase){
+                    //verifies coinbase transaction using signature of miner 
+                    let hashMessage = sha256(JSON.stringify(transaction.outputs) + transaction.timestamp + transaction.nonce + transaction.sender)
+                    let key = (new elliptic.ec('secp256k1')).keyFromPublic(block.miner, 'hex')
+                    if(!key.verify(hashMessage, transaction.signature)){
+                        resolve(false)
+                    }
                 }
                 else{
-                    this.verifyAndInterpretTransaction(transaction)
+                    if(!this.verifyTransaction()){
+                        resolve(false)
+                    }
                 }
             }
+            
+            //block is verified
+            resolve(true)
         })
+    }
+
+    async interpretAndAddVerifiedBlock(block){
+        //passes over and interprets transaction
+        for (var transaction of block.transactions){
+            if (transaction.sender == coinbase){
+                //pass
+            }
+            else{
+                if(await this.verifyAndInterpretTransaction(transaction == false)){
+                    throw new Error("verified block is found to be unverified");
+                }
+            }
+        }
+
+        await this.addBlock(block)
     }
 
     //get sum of all outputs in a transaction
@@ -231,6 +315,7 @@ class BlockChain{
         //10 outputs -> 10000
         return baseFee + outputFee
     }
+
 
 
     async grabMainData(){

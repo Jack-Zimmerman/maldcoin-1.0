@@ -12,9 +12,6 @@ const {
     addAndHash
 } = require("./crypto.js")
 
-const {
-    BlockChain
-} = require('./blockchain.js');
 
 const{
     Transaction
@@ -33,15 +30,15 @@ class Block{
         this.previousBlock = previousBlock;
         //check if genesis:
         if (previousBlock === undefined){
-            this.previousProof = "0"
+            this.previousHeader = "0"
             this.height = 0
 
             //how fast my computer hashes in 2 minutes about
             //block time is 2 minutes;
-            this.difficulty = Hashes.KILOHASH * 100
+            this.difficulty = Hashes.KILOHASH
         }
         else{
-            this.previousProof = this.previousBlock.proof;
+            this.previousHeader = this.previousBlock.header;
             this.height = this.previousBlock.height+1;
             this.difficulty = this.calculateDifficulty()
         }
@@ -86,10 +83,15 @@ class Block{
     //miner must pass the wallet object in order to sign the coinbase transaction
     complete(wallet){
         this.miner = wallet.public
-        this.merkleRoot = (new MerkleTree.MerkleTree((this.transactions.map(x=>sha256(x))), sha256)).getRoot().toString('hex')
         this.timeStamp = Date.now()
-        this.header = sha256(JSON.stringify(this))
+
+        //add coinbase transation
         this.addTransaction(wallet.signTransaction(Transaction.createCoinBaseTransaction(this.miner, this.calculateReward())))
+
+        //merkle root:
+        this.merkleRoot = (new MerkleTree.MerkleTree((this.transactions.map(x=>sha256(JSON.stringify(x)))), sha256)).getRoot().toString('hex')
+
+        this.header = sha256(JSON.stringify(this))
     }
 
     manualMine(){

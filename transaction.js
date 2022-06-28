@@ -34,7 +34,7 @@ class Transaction{
 
 
     //verify external transaction given the object or hashmap
-    static verifyTransaction(transaction){
+    static verifySignature(transaction){
         let hashMessage = sha256(JSON.stringify(transaction.outputs) + transaction.timestamp + transaction.nonce + transaction.sender)
         let key = (new elliptic.ec('secp256k1')).keyFromPublic(transaction.sender, 'hex')
         return key.verify(hashMessage, transaction.signature)
