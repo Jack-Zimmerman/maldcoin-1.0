@@ -8,7 +8,8 @@ const {
     sha256,
     checkIfSumLess,
     generateTarget,
-    hexify
+    hexify,
+    COINBASE
 } = require("./crypto.js")
 
 
@@ -42,8 +43,7 @@ class Transaction{
     
 
     static createCoinBaseTransaction(address, amount){
-        let coinbase = "0".repeat(64)
-        let transac = new Transaction(coinbase, 0)
+        let transac = new Transaction(COINBASE, 0)
         transac.addOutput(address, amount)
         return transac
     }

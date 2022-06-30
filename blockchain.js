@@ -16,7 +16,8 @@ const {
     checkIfSumLess,
     generateTarget,
     hexify,
-    addAndHash
+    addAndHash,
+    COINBASE
 } = require("./crypto.js");
 
 const{
@@ -98,13 +99,20 @@ class BlockChain{
 
             delete block.previousBlock;
 
-            let verification = await this.verifyBlock(block)
-            console.log(verification)
-            await this.blocks.insertOne(block).then(async result=>{
-                let currentHeight = await this.getCurrentHeight()
-                await this.data.updateOne({use : "data"}, {$set: {chainHeight : currentHeight+1}})
-                resolve(true)
-            })
+            const verification = await this.verifyBlock(block)
+            if (verification == 1){//check to see if block passes verification (code 1)
+                //re-verify and then interpret transactions within the verified block
+                await this.interpretTransactions(block)
+                await this.blocks.insertOne(block).then(async result=>{
+                    let currentHeight = await this.getCurrentHeight()
+                    await this.data.updateOne({use : "data"}, {$set: {chainHeight : currentHeight+1}})
+                    resolve(true)
+                })
+            }
+            else{
+                console.log(`BLOCK rejected due to error ${verification}`)
+                resolve(false)
+            }
         })
     }
 
@@ -155,7 +163,7 @@ class BlockChain{
             else if (transaction.outputs.map(x => x.sender).indexOf(transaction.sender) != -1){ //check to see if any transactions were made to self
                 resolve(false)
             }
-            else if (transactions.outputs.map(x => Math.abs(x)) != transaction.outputs){//check to see if negative transactions were attempted
+            else if (transaction.outputs.map(x => Math.abs(x)) != transaction.outputs){//check to see if negative transactions were attempted
                 resolve(false)
             }
         }
@@ -166,65 +174,48 @@ class BlockChain{
     //changes blockchain balance data and adds transaction fee
     async verifyAndInterpretTransaction(transaction){
         return new Promise(async resolve =>{
-            if (Object.keys(transaction) != Object.keys(new Transaction("test", 1))){
-                resolve(false)
-            }
-            else{
-                //START INTERPRET SENDER
+            if(transaction.sender != COINBASE){
+                if (await this.verifyTransaction(transaction) == false){
+                    resolve(false)
+                }
+                //change nonce and remove coins from sending account:
+
                 const addressData = await this.data.findOne({address : transaction.sender})
 
-                //if address is unknown then reject transaction
-                //if node is up to date all accounts would have been registered
-                if (addressData == undefined){
-                    resolve(false)
-                }
-                else if (addressData.nonce >= transaction.nonce){ //check to see that sender used higher nonce than before
-                    resolve(false)
-                }
-                else if (addressData.balance < this.getTransactionAmount(transaction) && this.getTransactionAmount(transaction) != 0){ //generate sum of all outputs and check for total amount
-                    resolve(false)
-                }
-                else if (transaction.outputs.map(x => x.sender).indexOf(transaction.sender) != -1){ //check to see if any transactions were made to self
-                    resolve(false)
-                }
-                else if (transactions.outputs.map(x => Math.abs(x)) != transaction.outputs){//check to see if negative transactions were attempted
-                    resolve(false)
+                await this.data.updateOne({address : transaction.sender}, 
+                    {$set : {
+                        balance : addressData.balance - this.getTransactionAmount(transaction),
+                        nonce : transaction.nonce
+                    }}
+                )
+
+                
+            }
+
+            //if transaction is valid 
+            for (const output of transaction.outputs){
+                let reciever = await this.data.findOne({address : output.reciever})
+                if (reciever == undefined){
+                    //add address to balance list if not included
+                    this.data.insertOne({
+                        address : output.reciever,
+                        balance : output.amount,
+                        nonce : 0
+                    })
                 }
                 else{
-                    //change nonce and remove coins from sending account:
-                    await this.data.updateOne({address : transaction.sender}, 
-                        {$set : {
-                            balance : addressData.balnce - this.getTransactionAmount(transaction),
-                            nonce : transaction.nonce
-                        }}
+                    //add incoming coins to address
+                    await this.data.updateOne({address : output.reciever}, 
+                        {$set : {balance : reciever.balance + output.amount}}
                     )
-
-                    //if transaction is valid 
-                    for (const output of transaction.outputs){
-                        let reciever = await this.data.findOne({address : output.reciever})
-                        if (reciever == undefined){
-                            //add address to balance list if not included
-                            this.data.insertOne({
-                                address : output.reciever,
-                                balance : output.amount,
-                                nonce : 0
-                            })
-                        }
-                        else{
-                            //add incoming coins to address
-                            await this.data.updateOne({address : output.reciever}, 
-                                {$set : {balance : reciever.balance + output.amount}}
-                            )
-                        }
-                    }
-
-                    //add fee to end of transaction
-                    transaction.fee = this.calculateTransactionFee(transaction)
-
-                    //return finalized transaction
-                    resolve(transaction)
                 }
             }
+
+            //add fee to end of transaction
+            transaction.fee = BlockChain.calculateTransactionFee(transaction)
+
+            //return finalized transaction
+            resolve(transaction)
         })   
     }
 
@@ -234,10 +225,9 @@ class BlockChain{
     
     async verifyBlock(block){
         return new Promise(async resolve =>{
-            const coinbase = "0".repeat(64);
             const correctReward = Block.calculateReward(block.height);
             const compiledProof = addAndHash(block.nonce.toString(16), block.header)
-            const coinBaseTransaction = block.transactions.filter(x => x.sender === coinbase)
+            const coinBaseTransaction = block.transactions.filter(x => x.sender === COINBASE)
             const previousBlock = await this.getHighestBlock()
 
             //check if header is valid:
@@ -279,7 +269,7 @@ class BlockChain{
 
             //verifies all transactions(non-mutable)
             for (var transaction of block.transactions){
-                if (transaction.sender == coinbase){
+                if (transaction.sender == COINBASE){
                     //verifies coinbase transaction using signature of miner 
                     let hashMessage = sha256(JSON.stringify(transaction.outputs) + transaction.timestamp + transaction.nonce + transaction.sender)
                     let key = (new elliptic.ec('secp256k1')).keyFromPublic(block.miner, 'hex')
@@ -299,21 +289,15 @@ class BlockChain{
         })
     }
 
-    async interpretAndAddVerifiedBlock(block){
+    async interpretTransactions(block){
         //passes over and interprets transaction
         for (var transaction of block.transactions){
-            if (transaction.sender == coinbase){
-                //pass
-                //already verified
-            }
-            else{
-                if(await this.verifyAndInterpretTransaction(transaction == false)){
-                    throw new Error("verified block is found to be unverified");
-                }
+            if(await this.verifyAndInterpretTransaction(transaction) == false){
+                throw new Error(`Rejected block due to transaction error at transac hash : ${transaction.hash}`);
             }
         }
 
-        await this.addBlock(block)
+        return true
     }
 
     //get sum of all outputs in a transaction

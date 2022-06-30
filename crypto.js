@@ -7,6 +7,8 @@ const Hashes = {
     GIGAHASH : 1000000000
 }
 
+const COINBASE = "0".repeat(64)
+
 
 const sha256 = (string) => {
     let hash = crypto.createHash('sha256');
@@ -60,6 +62,7 @@ module.exports = {
     generateTarget,
     hexify, 
     Hashes, 
-    addAndHash
+    addAndHash,
+    COINBASE
 }
 
