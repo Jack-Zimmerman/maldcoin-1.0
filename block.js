@@ -35,7 +35,7 @@ class Block{
 
             //how fast my computer hashes in 2 minutes about
             //block time is 2 minutes;
-            this.difficulty = Hashes.KILOHASH
+            this.difficulty = (Hashes.KILOHASH).toString(16)
         }
         else{
             this.previousHeader = this.previousBlock.header;
@@ -83,7 +83,7 @@ class Block{
     //miner must pass the wallet object in order to sign the coinbase transaction
     complete(wallet){
         this.miner = wallet.public
-        this.timeStamp = Date.now()
+        this.timestamp = Date.now()
 
         //add coinbase transation
         this.addTransaction(wallet.signTransaction(Transaction.createCoinBaseTransaction(this.miner, this.calculateReward())))
@@ -91,11 +91,22 @@ class Block{
         //merkle root:
         this.merkleRoot = (new MerkleTree.MerkleTree((this.transactions.map(x=>sha256(JSON.stringify(x)))), sha256)).getRoot().toString('hex')
 
-        this.header = sha256(JSON.stringify(this))
+        //block header is the hash of the object
+        //therefore must not be mutated from this point
+
+        //deletes previousblock metadata
+        delete this.previousBlock;
+        this.header = Block.generateHeader(this)
     }
 
     manualMine(){
         [this.nonce, this.proof] = mineBlock(this)
+    }
+
+    static generateHeader(block){
+        return sha256(
+            block.previousHeader + block.merkleRoot + block.timestamp
+        )
     }
 }
 

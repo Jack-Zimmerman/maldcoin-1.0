@@ -71,8 +71,10 @@ class Wallet{
     }
 
     //mutable
+    //signs transaction and adds a header(hash)
     signTransaction(transaction){
        let hash = sha256(JSON.stringify(transaction.outputs) + transaction.timestamp + transaction.nonce + transaction.sender)
+       transaction.hash = hash
        this.incrementNonce()
        transaction.signature = (new elliptic.ec("secp256k1")).sign(hash, this.private, "hex").toDER("hex")
        return transaction

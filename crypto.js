@@ -8,6 +8,11 @@ const Hashes = {
 }
 
 
+const sha256 = (string) => {
+    let hash = crypto.createHash('sha256');
+    return hash.update(string).digest('hex')
+}
+
 //takes two hex inputs and returns the sha256 of the addition
 const addAndHash = (hex1, hex2) => {
    return sha256(
@@ -21,10 +26,7 @@ const addAndHash = (hex1, hex2) => {
         //returns hexidecimal string representation of proof 
 //#END-DEFINE
 
-const sha256 = (string) => {
-    let hash = crypto.createHash('sha256');
-    return hash.update(string).digest('hex')
-}
+
 
 //adds required header for BigInt constructor to recognize
 const hexify = (hexString) =>{
@@ -35,14 +37,16 @@ const hexify = (hexString) =>{
 //converts hex into BigInts and then calculates
 const checkIfSumLess = (h1, h2, target)=>{
     const hash = addAndHash(h1, h2)
-    
     return BigInt(hexify(hash)) <= BigInt(hexify(target))
 }
 
+//DIFFICULTY MUST BE GIVEN IN HEX FORMAT
 //returns BigInt converted to hex string
 const generateTarget = (difficulty)=>{
     return ((BigInt(2) ** BigInt(256)) / BigInt(hexify(difficulty))).toString(16)
 }
+
+
 
 
 

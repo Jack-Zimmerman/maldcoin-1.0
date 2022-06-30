@@ -3,6 +3,7 @@ const express = require("express")
 const MerkleTree = require("merkletreejs")
 const mongo = require('mongodb');
 const fileStream = require('fs');
+const elliptic = require("elliptic")
 
 //#DEFINE - port for database
     //Port for mongoDB is 27017
@@ -15,6 +16,7 @@ const {
     checkIfSumLess,
     generateTarget,
     hexify,
+    addAndHash
 } = require("./crypto.js");
 
 const{
@@ -91,9 +93,14 @@ class BlockChain{
 
     async addBlock(block){
         //REMEMBER TO ADD INCREMENT TO USER NONCE FOR EACH TRANSACTION
-        return new Promise(resolve =>{
-            delete block.previousBlock
-            this.blocks.insertOne(block).then(async result=>{
+        return new Promise(async resolve =>{
+            //deletes previousblock metadata from block object
+
+            delete block.previousBlock;
+
+            let verification = await this.verifyBlock(block)
+            console.log(verification)
+            await this.blocks.insertOne(block).then(async result=>{
                 let currentHeight = await this.getCurrentHeight()
                 await this.data.updateOne({use : "data"}, {$set: {chainHeight : currentHeight+1}})
                 resolve(true)
@@ -229,34 +236,45 @@ class BlockChain{
         return new Promise(async resolve =>{
             const coinbase = "0".repeat(64);
             const correctReward = Block.calculateReward(block.height);
-            const compiledProof = sha256(hexify(BigInt(block.nonce) + BigInt(hexify(block.header))));
+            const compiledProof = addAndHash(block.nonce.toString(16), block.header)
             const coinBaseTransaction = block.transactions.filter(x => x.sender === coinbase)
             const previousBlock = await this.getHighestBlock()
 
             //check if header is valid:
-            if (sha256(JSON.stringify(block)) != block.header){
-                resolve(false)
+            if (Block.generateHeader(block) != block.header){
+                resolve(-1)
             }
 
             //check to see if previousBlock pointer is correct:
-            if (block.previousBlock != previousBlock){
-                resolve(false)
+            if(previousBlock == undefined){
+                if (block.previousHeader != "0"){
+                    resolve(-2)
+                }
+            }
+            else{
+                if (block.previousHeader != previousBlock.header){
+                    resolve(-2)
+                }
             }
 
             //check to see if POW is correct for block:
             if (compiledProof != block.proof){//nonce + header is truthfull
-                resolve(false)
+                resolve(-3)
             }
             else if (BigInt(hexify(compiledProof)) > BigInt(hexify(generateTarget(block.difficulty)))){//check to see if proof demonstrates sufficient difficulty
-                resolve(false)
+                resolve(-4)
             }
 
+
             //check to see if reward is correct:
-            if (coinBaseTransaction.length != 1){//check for multiple or no coinbase transactions
-                resolve(false)
+            if (coinBaseTransaction.length != 1){//check for multiple or no coinbase transactions 
+                resolve(-5)
             }
-            else if (coinBaseTransaction.amount != correctReward){
-                resolve(false)
+            else if (coinBaseTransaction[0].outputs.length != 1){
+                resolve(-6)
+            }
+            else if (coinBaseTransaction[0].outputs[0].amount != correctReward){//generate summed amount for outputs
+                resolve(-7)
             }
 
             //verifies all transactions(non-mutable)
@@ -266,18 +284,18 @@ class BlockChain{
                     let hashMessage = sha256(JSON.stringify(transaction.outputs) + transaction.timestamp + transaction.nonce + transaction.sender)
                     let key = (new elliptic.ec('secp256k1')).keyFromPublic(block.miner, 'hex')
                     if(!key.verify(hashMessage, transaction.signature)){
-                        resolve(false)
+                        resolve(-8)
                     }
                 }
                 else{
                     if(!this.verifyTransaction()){
-                        resolve(false)
+                        resolve(-9)
                     }
                 }
             }
             
             //block is verified
-            resolve(true)
+            resolve(1)
         })
     }
 
@@ -286,6 +304,7 @@ class BlockChain{
         for (var transaction of block.transactions){
             if (transaction.sender == coinbase){
                 //pass
+                //already verified
             }
             else{
                 if(await this.verifyAndInterpretTransaction(transaction == false)){

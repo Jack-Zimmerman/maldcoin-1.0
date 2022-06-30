@@ -24,7 +24,7 @@ class Transaction{
         this.outputs = []
         this.signature = ""
         this.nonce = nonce
-        this.timeStamp = Date.now()
+        this.timestamp = Date.now()
     }
 
     //give in coin value--NO DECIMAL    
