@@ -24,6 +24,10 @@ class Transaction{
         this.sender = senderAddress
         this.outputs = []
         this.signature = ""
+
+        //hash will be given once transaction is signed by wallet
+        this.hash = ""
+
         this.nonce = nonce
         this.timestamp = Date.now()
     }

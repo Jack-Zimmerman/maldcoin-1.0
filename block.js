@@ -88,8 +88,8 @@ class Block{
         //add coinbase transation
         this.addTransaction(wallet.signTransaction(Transaction.createCoinBaseTransaction(this.miner, this.calculateReward())))
 
-        //merkle root:
-        this.merkleRoot = (new MerkleTree.MerkleTree((this.transactions.map(x=>sha256(JSON.stringify(x)))), sha256)).getRoot().toString('hex')
+        //hex merkle root from generated tree:
+        this.merkleRoot = (new MerkleTree.MerkleTree((this.transactions.map(x=>x.hash)), sha256)).toString('hex')
 
         //block header is the hash of the object
         //therefore must not be mutated from this point
@@ -99,10 +99,12 @@ class Block{
         this.header = Block.generateHeader(this)
     }
 
+
     manualMine(){
         [this.nonce, this.proof] = mineBlock(this)
     }
 
+    
     static generateHeader(block){
         return sha256(
             block.previousHeader + block.merkleRoot + block.timestamp
