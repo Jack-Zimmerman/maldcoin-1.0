@@ -2,12 +2,16 @@
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "bn.js": "^5.2.1",
+    "concurrently": "^7.2.2",
+    "cross-env": "^7.0.3",
+    "electron": "^19.0.7",
     "elliptic": "^6.5.4",
     "express": "^4.18.1",
     "fast-sha256": "^1.3.0",
     "merkletreejs": "^0.2.31",
     "mongodb": "^4.7.0",
     "sha256-wasm": "^2.2.2",
-    "starkbank-ecdsa": "^1.1.4"
+    "starkbank-ecdsa": "^1.1.4",
+    "wait-on": "^6.0.1"
   }
 }
