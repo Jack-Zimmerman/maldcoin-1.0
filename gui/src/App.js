@@ -1,24 +1,31 @@
 import React, {Component} from 'react'
 import {NavBar} from './components/NavBar'
+import {transactionsPage} from "./content/Transactions"
 
 class App extends Component {
-
-  //page that the application currently is on
-
   navData = [
     {
-      title: "Wallet",
+      title: "Wallet & Transactions",
+      data: transactionsPage,
+      onClick : function(manip){
+        manip(transactionsPage)
+      }
+    },
+    {
+      title: "Quit",
       data: <h1>test</h1>,
       //provide reference to this.page in App.js
       onClick: function(manip){
-        manip(<h1>test</h1>)
+        //will quit the application onclose
+        window.close()
       }
     }
   ]
+
   
   constructor(props){
     super(props)
-    this.state = {pageHtml : <h1>placeholder</h1>}
+    this.state = {pageHtml : this.navData[0].data}
   }
 
   //html manipulator

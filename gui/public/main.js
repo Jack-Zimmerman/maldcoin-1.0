@@ -1,8 +1,6 @@
 const {
     app, 
-    BrowserWindow,
-    Menu,
-    MenuItem
+    BrowserWindow
 } = require('electron')
 
 const path = require('path')
@@ -26,7 +24,7 @@ function createWindow() {
         icon : path.join(__dirname, 'favicon.ico')
     })
 
-    //pin to port 3000
+    //pin to port 3000 for react
     window.loadURL('http://localhost:3000');
 
     //remove menu

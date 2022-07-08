@@ -6,7 +6,7 @@ export class NavBarElement extends Component{
     render(){
         return(
             //create new button that when clicked passes page reference to the onClick function to then allow for the change of the page html
-            <button onClick={() => this.props.onClick(this.props.pageManipator)}  className="w-1/6 h-1/6 font-mono bg-gray-700 hover:bg-blue-100 hover:text-black text-white ">
+            <button onClick={() => this.props.onClick(this.props.pageManipator)}  className="px-7 h-1/6 font-mono bg-gray-700 hover:bg-blue-100 hover:text-black text-white ">
                 {this.props.title}
             </button>
         )
