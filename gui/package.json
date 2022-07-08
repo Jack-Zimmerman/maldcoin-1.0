@@ -20,11 +20,11 @@
   "main": "public/main.js",
   "homepage": "./",
   "scripts": {
-    "start": "npm run build:css && react-scripts start",
+    "start": "npm run build:css && react-scripts start TAILWIND_MODE=watch ",
     "build": "npm run build:css && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "build:css": "",
+    "build:css" : "postcss src/styles/tailwind.css -o src/styles/main.css ",
     "electron:serve": "concurrently -k \"cross-env BROWSER=none yarn start\" \"yarn electron:start\"",
     "electron:build": "",
     "electron:start": "yarn wait-on tcp:3000 && electron ."
