@@ -11,6 +11,7 @@ export const transactionsPage = (
     <>
         <AddressViewer></AddressViewer>
         <BalanceViewer></BalanceViewer>
+        <hr className="relative top-16 border-y-2"></hr>
         <TransactionList></TransactionList>
     </>
 ) 

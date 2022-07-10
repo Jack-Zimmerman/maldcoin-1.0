@@ -20,6 +20,14 @@ class App extends Component {
         window.close()
       }
     }
+    ,
+    {
+      title: "test",
+      data: <h1>test</h1>,
+      onClick: function(manip){
+        manip(<h1>test</h1>)
+      }
+    }
   ]
 
   

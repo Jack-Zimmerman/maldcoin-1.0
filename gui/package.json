@@ -21,7 +21,7 @@
   "homepage": "./",
   "scripts": {
     "start": "npm run build:css && react-scripts start TAILWIND_MODE=watch ",
-    "build": "npm run build:css && react-scripts build",
+    "build": "npm run build:css && serve -s build TAILWIND_MODE=watch ",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "build:css" : "postcss src/styles/tailwind.css -o src/styles/main.css ",

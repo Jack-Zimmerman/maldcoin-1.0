@@ -9,17 +9,32 @@ class TransactionListObject extends React.Component{
 
     render(){
         return(
-            <p>{this.props.transaction.sender + " " + this.props.transaction.amount}<AiOutlineArrowRight className='inline'></AiOutlineArrowRight>{"reciever" + this.props.transaction.reciever}</p>
+            <>
+                <p className="font-mono font-semibold mx-2">{this.props.transaction.amount + " from " + this.props.transaction.sender}<AiOutlineArrowRight className='inline'></AiOutlineArrowRight>{this.props.transaction.reciever}</p>
+                <hr className="border-y-2 border-black"></hr>
+            </>
         )
     }
 }
 
 export class TransactionList extends React.Component{
+    testTransactions = [
+        {
+            sender : "You",
+            amount : 100,
+            reciever : "Calvin"
+        },
+        {
+            sender : "Calvin",
+            amount : 99.99,
+            reciever : "You"
+        }
+    ]
     constructor(){
         super()
         this.state = {
             transactionList : [],
-            transactionObjectList : this.generateTransactionComponent(["Loading..."])
+            transactionObjectList : this.generateTransactionComponent(["loading element"])
         }
     }
 
@@ -29,28 +44,25 @@ export class TransactionList extends React.Component{
         )
     }
     
+
+    //where http request will be made for transaction objects
     componentDidMount(){
-        let x = new Promise(resolve => setTimeout(resolve, 5000)) 
-        const testTransactions = ["test", "123"]
-        const testObjects = testTransactions.map(this.generateTransactionComponent)
-
-        x.then(()=>{
-            this.setState(
-                {
-                    transactionList: ["test", "123"],
-                    transactionObjectList : testObjects
-
-                }
-            )
-        })
+        this.setState(
+            {
+                transactionList: this.testTransactions,
+                transactionObjectList : this.testTransactions.map(this.generateTransactionComponent)
+            }
+        )
     }
 
 
     render(){
         return (
-
-            <div className="absolute bottom-5 w-fit h-fit">
-                {this.state.transactionObjectList}
+            <div className='absolute bottom-6 w-10/12 h-1/2 left-16 border-black border-4 rounded-xl bg-gray-500'>
+                <h1 className="font-mono font-bold m-1 text-4xl">Transactions:</h1>
+                <div className="relative h-5/6  border-black border-4 rounded-md bg-white">
+                    {this.state.transactionObjectList}
+                </div>
             </div>
         )
     }

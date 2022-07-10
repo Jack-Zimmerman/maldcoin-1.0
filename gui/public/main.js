@@ -21,7 +21,8 @@ function createWindow() {
             enableRemoteModule : true
         },
         autoHideMenuBar: true,
-        icon : path.join(__dirname, 'favicon.ico')
+        icon : path.join(__dirname, 'favicon.ico'),
+        resizable: false
     })
 
     //pin to port 3000 for react
