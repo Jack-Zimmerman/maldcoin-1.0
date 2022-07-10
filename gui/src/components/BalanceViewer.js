@@ -24,13 +24,19 @@ export class BalanceViewer extends React.Component{
 
     render(){
         return(
-            <div className="relative w-1/2 bg-gray-700">
-                <h2 className='bg-grey-700 text-white text-center'>
-                    {
-                        //balance to 8 decimal places(accuracy of COIN)
-                        this.state.balance.toFixed(8)
-                    }
-                </h2>
+            //outer border 
+                //inner border and backdrop 
+                    //data
+            <div className="relative w-2/3 h-fit p-2 text-xl mx-auto bg-gray-500 rounded-xl border-4 border-black top-10">
+                <h1 className='text-mono text-red-800 font-bold'>MALDcoin Balance:</h1>
+                <div className="bg-gray-700 font-mono rounded-xl">
+                    <h2 className='bg-grey-700 text-5xl text-white text-center'>
+                        {
+                            //balance to 8 decimal places(accuracy of COIN)
+                            this.state.balance.toFixed(8) + " Coins"
+                        }
+                    </h2>
+                </div>
             </div>
         )
     }

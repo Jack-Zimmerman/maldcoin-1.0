@@ -36,11 +36,28 @@ class App extends Component {
   render(){
     return (
       <>
+      <body className='w-screen h-screen bg-gray-700'>
         <NavBar elements={this.navData} pageManipator={this.changePageHtml}></NavBar>
         {this.state.pageHtml}
+      </body>
       </>
     )
   }
 }
 
+//config data that can be simplified away from the main node server
+export const config = {
+  address : "0329ce342b019890a4810e1b2b6106b34499564fec0a7eb66dd397a4231aab3400"
+}
+
+
+
 export default App;
+
+
+
+//localhost server request protocol:
+  //localhost:8080/balance
+    //returns account balance
+  //localhost:8080/tranasctions
+    //returns list of all past transactions

@@ -26,7 +26,7 @@ export class NavBar extends Component{
         })
 
         return(
-            <div className="flex-auto h-1/6 w-screen bg-gray-500">
+            <div className="flex-auto h-1/12 w-screen bg-gray-500 border-black border-b-4">
                 {barObjects}
             </div>
         )
