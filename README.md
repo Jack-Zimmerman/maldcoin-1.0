@@ -1,2 +1,2 @@
 # maldcoin-1.0
-  This time I am making MALDcoin in Node.js and implementing a http protocol in order to make setting up a server significantly easer.
+  MALDcoin implemented in Node.js with a GUI programmed with React.js, TailwindCSS, and Electron
